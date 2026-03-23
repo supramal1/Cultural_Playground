@@ -1,0 +1,10 @@
+node_modules
+.next
+.next.*
+.venv
+coverage
+.env*
+!.env.example
+.cache/*.json
+.DS_Store
+tmp

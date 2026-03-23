@@ -1,0 +1,9 @@
+<svg width="320" height="76" viewBox="0 0 320 76" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">WPP Media</title>
+  <desc id="desc">WPP Media logo lockup for Culture Bot header</desc>
+  <rect x="1.5" y="1.5" width="317" height="73" rx="11" fill="white" stroke="#D5DDF7" stroke-width="3"/>
+  <path d="M33 53L27 23H36L39.5 43L44.5 23H53L58 43L61.5 23H70L64 53H54.5L49 32L43.5 53H33Z" fill="#2045D9"/>
+  <path d="M82 53V23H103.5C111 23 116 27.6 116 34.5C116 41.5 111 46 103.5 46H91.5V53H82ZM91.5 38H102C105 38 107 36.6 107 34.5C107 32.4 105 31 102 31H91.5V38Z" fill="#2045D9"/>
+  <path d="M127 53V23H148.5C156 23 161 27.6 161 34.5C161 41.5 156 46 148.5 46H136.5V53H127ZM136.5 38H147C150 38 152 36.6 152 34.5C152 32.4 150 31 147 31H136.5V38Z" fill="#2045D9"/>
+  <text x="178" y="47" font-family="Avenir Next, Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#0B1230">Media</text>
+</svg>

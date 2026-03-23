@@ -1,0 +1,41 @@
+Download date: 2026-02-01
+Location: United Kingdom
+Time frame: Oct 2025 – Jan 2026
+Topic: Travel & Lifestyle
+Audience: GenZ Students (18-24)
+Baseline audience: UK Adults 18+
+NOTE: SYNTHETIC DEMO DATA – for demo and UX validation purposes only. Do not treat as production evidence.
+
+Area,Sub Area,Item,Share,Baseline share,Index,Relevance,URL
+Composition,Gender,Male,0.45,0.49,92,0.80,
+Composition,Gender,Female,0.55,0.51,108,0.80,
+Composition,Age,18-24,0.72,0.14,514,0.97,
+Composition,Age,25-34,0.21,0.19,111,0.60,
+Composition,Age,35-44,0.05,0.21,24,0.17,
+Composition,Age,45+,0.02,0.25,8,0.07,
+Travel & Destinations,Short Breaks,City break deals,0.62,0.19,326,0.97,
+Travel & Destinations,Short Breaks,Weekend trip ideas,0.58,0.20,290,0.96,
+Travel & Destinations,Accommodation,Holiday booking,0.55,0.18,306,0.95,
+Travel & Destinations,Budget Travel,Staycation UK,0.51,0.17,300,0.94,
+Travel & Destinations,Budget Travel,Travel experiences,0.49,0.16,306,0.93,
+Travel & Destinations,Budget Travel,Travel planning,0.47,0.18,261,0.92,
+Travel & Destinations,Accommodation,Airbnb stays,0.54,0.21,257,0.95,
+Travel & Destinations,Accommodation,Self-catering holiday,0.43,0.15,287,0.90,
+Digital & Social,Creator Economy,Creator content,0.52,0.22,236,0.91,
+Digital & Social,Creator Economy,Viral videos,0.49,0.20,245,0.90,
+Digital & Social,Trends,Social trends,0.46,0.19,242,0.89,
+Digital & Social,Culture,Meme culture,0.43,0.17,253,0.87,
+Digital & Social,Community,Online community,0.40,0.18,222,0.85,
+Entertainment,Streaming,Streaming services,0.71,0.48,148,0.78,
+Entertainment,Film,Cinema releases,0.54,0.31,174,0.82,
+Entertainment,TV,TV series binge,0.49,0.29,169,0.79,
+Entertainment,Film,Franchise films,0.46,0.27,170,0.77,
+Entertainment,Family Content,School holiday planning,0.41,0.28,146,0.87,
+Entertainment,Family Content,Family day out,0.39,0.29,134,0.85,
+Entertainment,Family Content,Weekend activities,0.44,0.30,147,0.88,
+Entertainment,Family Content,Kids content,0.37,0.25,148,0.84,
+Entertainment,Nostalgia,Disney+ originals,0.58,0.29,200,0.91,
+Entertainment,Nostalgia,Animated films,0.53,0.27,196,0.89,
+Food & Lifestyle,Dining,Eating out,0.42,0.39,108,0.66,
+Food & Lifestyle,Delivery,Food delivery,0.51,0.44,116,0.68,
+Food & Lifestyle,Restaurants,Restaurant deals,0.38,0.34,112,0.63,
