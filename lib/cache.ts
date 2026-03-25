@@ -1,9 +1,13 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { CACHE_TTL_MS, CACHE_VERSION } from "@/lib/config";
 import { hashId } from "@/lib/hash";
 
-const CACHE_DIR = path.join(process.cwd(), ".cache");
+const CACHE_DIR = process.env.CACHE_DIR
+  || (process.env.VERCEL
+    ? path.join(tmpdir(), "culture-bot-cache")
+    : path.join(process.cwd(), ".cache"));
 
 type CacheEnvelope<T> = {
   createdAt: number;
@@ -80,7 +84,11 @@ export async function withConnectorCache<T>(input: {
   const payload = await input.fetcher();
   const canCache = input.shouldCache ? input.shouldCache(payload) : true;
   if (canCache) {
-    await writeCache(key, payload, input.ttlMs ?? CACHE_TTL_MS);
+    try {
+      await writeCache(key, payload, input.ttlMs ?? CACHE_TTL_MS);
+    } catch {
+      // Cache write failures should not fail the underlying request.
+    }
   }
   return { payload, cache: "miss" };
 }
