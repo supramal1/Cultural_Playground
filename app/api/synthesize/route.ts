@@ -22,15 +22,6 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return Response.json(
-      {
-        error: "OPENAI_API_KEY is required for synthesis"
-      },
-      { status: 400 }
-    );
-  }
-
   try {
     const asV2 = body as { version?: string; schemaVersion?: number; mode?: string };
     const wantsV2 = asV2?.version === "v2" || asV2?.schemaVersion === 2;
@@ -100,6 +91,15 @@ export async function POST(request: Request): Promise<Response> {
           warnings: v2.warnings
         }
       });
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      return Response.json(
+        {
+          error: "OPENAI_API_KEY is required for synthesis"
+        },
+        { status: 400 }
+      );
     }
 
     const parsed = SynthesizeRequestSchema.safeParse(body);

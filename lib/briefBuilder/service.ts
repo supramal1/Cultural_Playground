@@ -21,6 +21,8 @@ type RetryContext = {
   allowedIds?: string[];
 };
 
+const FALLBACK_WARNING = "OPENAI_API_KEY missing: returned deterministic demo output.";
+
 function normalizeList(values: string[], cap: number): string[] {
   const seen = new Set<string>();
   const output: string[] = [];
@@ -40,6 +42,281 @@ function normalizeList(values: string[], cap: number): string[] {
     }
   }
   return output;
+}
+
+function titleCase(value: string): string {
+  return value
+    .split(/[\s_-]+/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function fallbackList(values: Array<string | undefined>, cap: number, fallbackPrefix: string): string[] {
+  const normalized = normalizeList(
+    values
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value)),
+    cap
+  );
+
+  let counter = 1;
+  while (normalized.length < cap) {
+    normalized.push(`${fallbackPrefix} ${counter}`);
+    counter += 1;
+  }
+
+  return normalized.slice(0, cap);
+}
+
+function summarizeSources(input: SynthesizeBlueprintRequest): string[] {
+  return normalizeList(
+    [
+      input.signals?.googleTrends ? "Google Trends" : "",
+      input.signals?.reddit ? "Reddit" : "",
+      input.signals?.wikimedia ? "Wikimedia" : "",
+      input.signals?.guardian ? "Guardian" : "",
+      input.insights?.audience ? "Audience insights CSV" : "",
+      input.insights?.search ? "Search insights CSV" : "",
+      input.brandSignals ? "Brand signal scan" : "",
+      input.brandDiscourseContext ? "Brand discourse context" : "",
+      input.playgroundContext?.sources?.length ? "Playground validation context" : "",
+      "Deterministic synthesis fallback"
+    ],
+    8
+  );
+}
+
+function buildFallbackBlueprint(input: {
+  request: SynthesizeBlueprintRequest;
+  allowedPointers: string[];
+}): PlaygroundBlueprint {
+  const { request, allowedPointers } = input;
+  const brand = request.brief.brand?.trim() || "The brand";
+  const audience = request.brief.audienceKeyword.trim();
+  const playground = request.chosenPlayground;
+  const evidencePointers = normalizeList(
+    [...playground.evidencePointers, ...allowedPointers],
+    12
+  );
+  const pointerAt = (index: number): string[] =>
+    evidencePointers[index] ? [evidencePointers[index]] : [];
+
+  const codeSeeds = normalizeList(
+    [
+      ...playground.keywords.core,
+      ...playground.keywords.expansion,
+      ...(request.brandSignals?.brandThemes || []),
+      ...(request.insights?.search?.queriesLatestMonth.byTrend.fastRising || []).map(
+        (item) => item.query
+      )
+    ],
+    8
+  );
+  while (codeSeeds.length < 5) {
+    codeSeeds.push(`${playground.name} signal ${codeSeeds.length + 1}`);
+  }
+
+  const communitySeeds = normalizeList(
+    [
+      ...playground.communities.subreddits.map((item) =>
+        item.startsWith("r/") ? item : `r/${item}`
+      ),
+      ...(request.brandSignals?.brandSubreddits || []).map((item) =>
+        item.startsWith("r/") ? item : `r/${item}`
+      ),
+      `${audience} creators`,
+      `${playground.name} planners`
+    ],
+    6
+  );
+  while (communitySeeds.length < 3) {
+    communitySeeds.push(`${playground.name} community ${communitySeeds.length + 1}`);
+  }
+
+  return PlaygroundBlueprintSchema.parse({
+    playgroundId: playground.id,
+    playgroundName: playground.name,
+    coreIdea: `${brand} can earn attention in ${playground.name} by showing up around the behaviours and conversations already clustering around this space, rather than adding generic category messaging.`,
+    whoItsFor: fallbackList(
+      [
+        audience,
+        `People actively exploring ${playground.keywords.core[0] || playground.name.toLowerCase()}`,
+        `Communities trading cues, proof, and recommendations inside ${playground.name.toLowerCase()}`,
+        `Planners looking for a culturally credible way for ${brand} to participate`
+      ],
+      4,
+      "Audience"
+    ).slice(0, 4),
+    cultureCodes: codeSeeds.slice(0, 5).map((seed, index) => ({
+      phrase: `${titleCase(seed)} acts as a planning signal`,
+      meaning: `People use ${seed.toLowerCase()} as a cue for what to notice, talk about, and share inside ${playground.name.toLowerCase()}.`,
+      evidencePointers: pointerAt(index)
+    })),
+    communityMap: communitySeeds.slice(0, 3).map((community, index) => ({
+      community,
+      careAbout: `Useful updates, social proof, and culturally fluent takes that help ${audience.toLowerCase()} navigate ${playground.name.toLowerCase()}.`,
+      evidencePointers: pointerAt(index + 5)
+    })),
+    tensionsTruths: fallbackList(
+      [
+        `${audience} wants relevance signals that feel current, not brand-inserted.`,
+        `Attention in ${playground.name} spikes when there is a clear cue for what matters right now.`,
+        `${brand} will be more credible if it curates and clarifies rather than over-explains.`,
+        playground.whyNow
+      ],
+      4,
+      "Planning tension"
+    ),
+    brandRole: fallbackList(
+      [
+        `${brand} should act as a useful interpreter of the moment, helping people understand what is worth paying attention to.`,
+        `${brand} should make participation easier through timely, culturally fluent creative and partnerships.`,
+        `Any activation should feel additive to the community rather than interruptive.`
+      ],
+      3,
+      "Brand role"
+    ).slice(0, 3),
+    guardrails: fallbackList(
+      [
+        ...playground.riskFlags.map((flag) => `Avoid adjacency with ${flag.toLowerCase()}.`),
+        ...((request.brandSignals?.brandRiskFlags || []).map(
+          (flag) => `Pressure-test the work against ${flag.toLowerCase()} risk.`
+        )),
+        "Use source-backed proof points before making cultural claims.",
+        "Keep creative specific to the audience behaviour, not just the event label.",
+        "Favor community language and timing cues over corporate messaging."
+      ],
+      4,
+      "Guardrail"
+    ),
+    measurementSuggestions: fallbackList(
+      [
+        "Track engagement rate against the selected cultural cue set.",
+        "Measure content saves, shares, or comments that signal active participation.",
+        "Compare response around lead-in, peak, and cool-down windows.",
+        `Monitor searches and conversation linked to ${playground.keywords.core[0] || playground.name.toLowerCase()}.`
+      ],
+      4,
+      "Measurement"
+    ),
+    proofOfUseSummary: {
+      usedSources: summarizeSources(request),
+      evidencePointers,
+      notes: [FALLBACK_WARNING]
+    },
+    notes: [
+      "Copy generated from deterministic rules because live OpenAI synthesis is unavailable."
+    ]
+  });
+}
+
+function buildFallbackBrief(input: {
+  request: SynthesizeBriefRequest;
+  allowedPointers: string[];
+}): MediaOwnerBrief {
+  const { request, allowedPointers } = input;
+  const brand = request.brief.brand?.trim() || "The brand";
+  const audience = request.brief.audienceKeyword.trim();
+  const selectedOpportunities = request.selectedOpportunities || [];
+  const leadMoment = selectedOpportunities[0];
+  const evidencePointers = normalizeList(
+    [
+      ...request.blueprint.proofOfUseSummary.evidencePointers,
+      ...selectedOpportunities.flatMap((item) => item.evidencePointers),
+      ...allowedPointers
+    ],
+    12
+  );
+  const momentPointers = (momentId: string, index: number): string[] => {
+    const moment = selectedOpportunities.find((item) => item.id === momentId);
+    return normalizeList(
+      [...(moment?.evidencePointers || []), evidencePointers[index] || ""],
+      6
+    );
+  };
+  const dateWindow =
+    request.brief.from && request.brief.to
+      ? `${request.brief.from} to ${request.brief.to}`
+      : "the selected planning window";
+  const signalBullets = fallbackList(
+    [
+      ...(request.signalScaleContext || []).slice(0, 3),
+      ...selectedOpportunities.slice(0, 3).map(
+        (moment) =>
+          `${moment.title} carries a final score of ${Math.round(moment.finalScore)} with signal boost ${moment.signalBoost.total}.`
+      ),
+      `Blueprint grounded in ${request.blueprint.playgroundName}.`
+    ],
+    3,
+    "Signal note"
+  );
+  const citations = fallbackList(
+    [
+      ...selectedOpportunities.slice(0, 3).map((moment) => `${moment.sourceName}: ${moment.title}`),
+      ...request.blueprint.proofOfUseSummary.usedSources
+    ],
+    3,
+    "Source"
+  );
+
+  return MediaOwnerBriefSchema.parse({
+    cultureSnapshot: `${request.blueprint.playgroundName} is behaving like a live planning space rather than a static topic. Across ${dateWindow}, ${audience.toLowerCase()} will respond to signals that help them decode what matters now and where ${brand} can show up with utility rather than noise.`,
+    culturalTension: `${audience} wants to feel current and culturally fluent, but the volume of signals inside ${request.blueprint.playgroundName.toLowerCase()} makes it hard to know which moments deserve attention. ${brand} can resolve that tension by helping people focus on the cues that matter most.`,
+    timingWindow: `Use the lead-in period to seed relevance, the peak window to publish the clearest proof point or activation, and the cool-down period to extend the conversation with recap or utility-led content across ${dateWindow}.`,
+    briefOneLiner: `Own the moments when ${audience.toLowerCase()} is actively scanning ${request.blueprint.playgroundName.toLowerCase()} for what matters next.`,
+    objectiveKpi: `${request.brief.objective || "Awareness"} with a primary KPI on qualified engagement rate and downstream action from culturally relevant content.`,
+    audienceMindset: `${audience} is looking for signals, shortcuts, and proof that help them participate with confidence. They are most receptive to work that feels current, socially legible, and grounded in the communities around ${request.blueprint.playgroundName.toLowerCase()}.`,
+    playgroundDefinitionCodes: `${request.blueprint.coreIdea} Core codes: ${request.blueprint.cultureCodes
+      .slice(0, 4)
+      .map((item) => item.phrase)
+      .join("; ")}.`,
+    theAsk: `Build a partner-ready activation that lands in the lead-in and peak windows around the selected moments, using the community cues and culture codes already validated in this playground.`,
+    deliverables: fallbackList(
+      [
+        "1 hero content concept tied to the strongest cultural cue in the window.",
+        "3 social or editorial executions timed to the lead-in, peak, and cool-down phases.",
+        "1 community-facing format or partnership mechanic that feels native to the playground.",
+        "1 reporting plan linking engagement and conversion signals back to the brief."
+      ],
+      4,
+      "Deliverable"
+    ),
+    timing: {
+      leadInDays: 10,
+      peakDays: 4,
+      coolDownDays: 5
+    },
+    guardrails: fallbackList(
+      [
+        ...request.blueprint.guardrails,
+        "Avoid over-claiming cultural authority without evidence in the appendix."
+      ],
+      4,
+      "Guardrail"
+    ),
+    proofAppendix: {
+      citations,
+      signalBullets,
+      evidencePointers
+    },
+    momentsToBuildAround: selectedOpportunities.slice(0, 4).map((moment, index) => ({
+      momentId: moment.id,
+      culturalBehaviour: `${moment.title} creates a cue for people to check in, compare takes, and share what the moment signals for them.`,
+      audienceState: `${audience} is scanning for timely proof, social validation, and a reason to participate while attention is concentrated.`,
+      actionBullets: [
+        `Publish a lead-in execution before ${moment.title} that helps the audience understand why this moment matters right now.`,
+        `Use the peak attention window around ${moment.title} to give partners a simple, shareable activation format.`
+      ],
+      evidencePointers: momentPointers(moment.id, index)
+    })),
+    notes: [
+      leadMoment
+        ? `Fallback brief anchored to ${leadMoment.title}.`
+        : "Fallback brief generated without selected opportunities.",
+      "Copy generated from deterministic rules because live OpenAI synthesis is unavailable."
+    ]
+  });
 }
 
 function extractJson(payload: unknown): unknown {
@@ -467,6 +744,16 @@ export async function synthesizeBlueprint(input: SynthesizeBlueprintRequest): Pr
   const pointerSet = collectBlueprintPointers(parsed);
   const allowedPointers = Array.from(pointerSet);
 
+  if (!process.env.OPENAI_API_KEY) {
+    return {
+      blueprint: buildFallbackBlueprint({
+        request: parsed,
+        allowedPointers
+      }),
+      warnings: [FALLBACK_WARNING]
+    };
+  }
+
   const run = async (corrective?: RetryContext): Promise<{ blueprint: PlaygroundBlueprint; invalidPointers: string[] }> => {
     const raw = await callOpenAiStructured({
       systemPrompt: blueprintSystemPrompt(),
@@ -514,6 +801,16 @@ export async function synthesizeMediaOwnerBrief(input: SynthesizeBriefRequest): 
   const parsed = SynthesizeBriefRequestSchema.parse(input);
   const { pointers, allowedMomentIds } = collectBriefPointers(parsed);
   const allowedPointers = Array.from(pointers);
+
+  if (!process.env.OPENAI_API_KEY) {
+    return {
+      brief: buildFallbackBrief({
+        request: parsed,
+        allowedPointers
+      }),
+      warnings: [FALLBACK_WARNING]
+    };
+  }
 
   const run = async (corrective?: RetryContext): Promise<{
     brief: MediaOwnerBrief;
